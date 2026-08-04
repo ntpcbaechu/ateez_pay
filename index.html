@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ateez_pay - 購買紀錄</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+    h1 { text-align: center; color: #4a5568; margin-bottom: 20px; }
+    .total-card { background: #667eea; color: white; padding: 15px; border-radius: 8px; text-align: center; font-size: 1.2rem; font-weight: bold; margin-bottom: 20px; }
+    .form-group { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    input { flex: 1; min-width: 120px; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+    button { background: #48bb78; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+    button:hover { background: #38a169; }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+    li:last-child { border-bottom: none; }
+    .item-name { font-weight: 500; }
+    .item-price { color: #e53e3e; font-weight: bold; }
+    .delete-btn { background: #e53e3e; padding: 4px 8px; font-size: 12px; }
+    .delete-btn:hover { background: #c53030; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>ATEEZ_PAY 記錄購買列表</h1>
+  
+  <div class="total-card">
+    總消費金額：NT$ <span id="total">0</span>
+  </div>
+
+  <form id="pay-form" class="form-group">
+    <input type="text" id="item-name" placeholder="品項名稱 (例: 專輯)" required>
+    <input type="number" id="item-price" placeholder="金額" required min="0">
+    <button type="submit">新增紀錄</button>
+  </form>
+
+  <ul id="item-list"></ul>
+</div>
+
+<script>
+  let items = JSON.parse(localStorage.getItem('ateez_pay_items')) || [];
+
+  const form = document.getElementById('pay-form');
+  const nameInput = document.getElementById('item-name');
+  const priceInput = document.getElementById('item-price');
+  const list = document.getElementById('item-list');
+  const totalEl = document.getElementById('total');
+
+  function render() {
+    list.innerHTML = '';
+    let total = 0;
+    
+    items.forEach((item, index) => {
+      total += Number(item.price);
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="item-name">${item.name}</span>
+        <div>
+          <span class="item-price">NT$ ${item.price}</span>
+          <button class="delete-btn" onclick="deleteItem(${index})">刪除</button>
+        </div>
+      `;
+      list.appendChild(li);
+    });
+
+    totalEl.textContent = total;
+    localStorage.setItem('ateez_pay_items', JSON.stringify(items));
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    items.push({
+      name: nameInput.value,
+      price: priceInput.value
+    });
+    nameInput.value = '';
+    priceInput.value = '';
+    render();
+  });
+
+  function deleteItem(index) {
+    items.splice(index, 1);
+    render();
+  }
+
+  render();
+</script>
+
+</body>
+</html>
