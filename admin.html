@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f1f5f9; margin: 0; padding: 20px; color: #0f172a; }
-    .container { max-width: 1200px; margin: 0 auto; }
+    .container { width: 95%; max-width: 1400px; margin: 0 auto; }
     
     #login-screen { position: fixed; inset: 0; background: rgba(15,23,42,0.8); display: flex; justify-content: center; align-items: center; z-index: 999; }
     .login-box { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
@@ -32,11 +32,9 @@
     
     .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
 
-    /* 卡片式雙行商品細項 */
     .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 15px; position: relative; }
     .item-card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
     
-    /* 隨機內容區塊 */
     .inclusions-box { background: #ffffff; border: 1px dashed #cbd5e0; padding: 10px; border-radius: 6px; margin-top: 8px; }
     .inclusion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
     
@@ -166,6 +164,7 @@
 
   let membersData = [];
   let pokaData = [];
+  let categoriesList = [];
   let rawOrdersData = {};
 
   onAuthStateChanged(auth, (user) => {
@@ -188,9 +187,30 @@
 
   async function loadInitialData() {
     try {
-      const [r1, r2] = await Promise.all([fetch('./json/members.json'), fetch('./json/poka.json')]);
+      const [r1, r2, r3] = await Promise.all([
+        fetch('./json/members.json'),
+        fetch('./json/poka.json'),
+        fetch('./json/categories.json')
+      ]);
       membersData = await r1.json();
       pokaData = await r2.json();
+      const defaultCats = await r3.json();
+
+      // 監聽 Firebase 動態分類，合併 JSON 預設
+      onValue(ref(db, 'categories'), (snap) => {
+        const firebaseCats = snap.val() ? Object.values(snap.val()) : [];
+        const setMap = new Set([...defaultCats, ...firebaseCats]);
+        if (!setMap.has("其他")) setMap.add("其他");
+        categoriesList = Array.from(setMap);
+        
+        // 更新當前頁面所有分類選單
+        document.querySelectorAll('.item-category').forEach(sel => {
+          const currentVal = sel.value;
+          populateCategorySelect(sel, categoriesList);
+          if (currentVal) sel.value = currentVal;
+        });
+      });
+
     } catch(e) { console.error(e); }
 
     onValue(ref(db, 'events'), (snap) => {
@@ -218,9 +238,17 @@
     });
   }
 
+  function populateCategorySelect(selectEl, cats) {
+    selectEl.innerHTML = '';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      selectEl.appendChild(opt);
+    });
+  }
+
   const itemsContainer = document.getElementById('items-container');
 
-  // 新增隨機物品單列
   function createInclusionRow(incContainer, data = {}) {
     const row = document.createElement('div');
     row.className = 'inclusion-row';
@@ -271,12 +299,7 @@
         </div>
         <div class="form-control">
           <label>分類</label>
-          <select class="item-category" required>
-            <option value="專輯">專輯</option>
-            <option value="小卡">小卡</option>
-            <option value="娃娃">娃娃</option>
-            <option value="其他">其他</option>
-          </select>
+          <select class="item-category" required></select>
         </div>
         <div class="form-control item-custom-cat-box" style="display:${data.category === '其他' ? 'block' : 'none'};">
           <label>自訂分類</label>
@@ -320,7 +343,6 @@
         </div>
       </div>
 
-      <!-- 隨機內容動態配置區塊 -->
       <div class="inclusions-box">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
           <span style="font-size:12px; font-weight:bold; color:#475569;">🎁 拆出/隨機內容配置：</span>
@@ -330,6 +352,7 @@
       </div>
     `;
 
+    populateCategorySelect(card.querySelector('.item-category'), categoriesList.length ? categoriesList : ["專輯","小卡","娃娃","海報","飯拍","其他"]);
     populateSelect(card.querySelector('.item-member'), membersData);
 
     if (data.category) card.querySelector('.item-category').value = data.category;
@@ -342,17 +365,13 @@
     catSel.addEventListener('change', () => customBox.style.display = catSel.value === '其他' ? 'block' : 'none');
 
     const incContainer = card.querySelector('.inc-rows-container');
-    
-    // 如果有舊資料 (inclusions)
     if (data.inclusions && data.inclusions.length > 0) {
       data.inclusions.forEach(inc => createInclusionRow(incContainer, inc));
     } else if (data.hasPoka) {
-      // 相容舊資料
       createInclusionRow(incContainer, { type: '隨機小卡', member: data.pokaMember });
     }
 
     card.querySelector('.add-inc-btn').addEventListener('click', () => createInclusionRow(incContainer));
-
     card.querySelector('.remove-card-btn').addEventListener('click', () => {
       if (itemsContainer.children.length > 1) card.remove();
     });
@@ -403,9 +422,16 @@
         set(ref(db, `events/${eventName.replace(/[.#$\[\]]/g, "_")}`), eventName);
       }
 
+      const catVal = card.querySelector('.item-category').value;
+      const customCatVal = card.querySelector('.item-custom-category').value.trim();
+
+      // 如果選其他並手動輸入，自動保存至 Firebase categories
+      if (catVal === '其他' && customCatVal) {
+        set(ref(db, `categories/${customCatVal.replace(/[.#$\[\]]/g, "_")}`), customCatVal);
+      }
+
       if (twdPrice !== '') itemsTotalTwd += Number(twdPrice);
 
-      // 收集隨機內容
       const inclusions = [];
       card.querySelectorAll('.inclusion-row').forEach(incRow => {
         inclusions.push({
@@ -418,8 +444,8 @@
       items.push({
         eventName: eventName,
         name: name,
-        category: card.querySelector('.item-category').value,
-        customCategory: card.querySelector('.item-custom-category').value,
+        category: catVal,
+        customCategory: customCatVal,
         member: card.querySelector('.item-member').value,
         currency: card.querySelector('.item-currency').value,
         origPrice: origPrice !== '' ? Number(origPrice) : '',
@@ -466,7 +492,6 @@
     }
   });
 
-  // Listen & Render Admin List
   function listenRecords() {
     onValue(ref(db, 'orders'), (snapshot) => {
       const tbody = document.getElementById('admin-records-tbody');
@@ -499,7 +524,6 @@
     });
   }
 
-  // Edit logic
   function loadOrderToEdit(key) {
     const o = rawOrdersData[key];
     if (!o) return;
