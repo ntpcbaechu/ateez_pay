@@ -44,18 +44,17 @@
     <table>
       <thead>
         <tr>
-          <th>活動名稱</th>
           <th>下單日期</th>
           <th>購入平台</th>
           <th>預計出貨</th>
           <th>到貨日期</th>
-          <th>購買商品與小卡細項</th>
+          <th>購買商品與活動細項</th>
           <th>滿額卡</th>
-          <th>總金額</th>
+          <th>總金額 (含運/手續費/折扣)</th>
         </tr>
       </thead>
       <tbody id="records-tbody">
-        <tr><td colspan="8" style="text-align: center; color: #94a3b8;">載入資料中...</td></tr>
+        <tr><td colspan="7" style="text-align: center; color: #94a3b8;">載入資料中...</td></tr>
       </tbody>
     </table>
   </div>
@@ -85,7 +84,7 @@
     const data = snapshot.val();
 
     if (!data) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8;">目前尚無紀錄</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">目前尚無紀錄</td></tr>';
       document.getElementById('grand-total').textContent = '0';
       return;
     }
@@ -96,21 +95,21 @@
 
       let itemsSummary = (o.items || []).map(i => {
         let pokaTxt = i.hasPoka ? `<span class="badge badge-poka">卡:${i.pokaMember || '無'}</span>` : '';
-        return `<div>• ${i.name} (${i.member}) - $${i.price} ${pokaTxt}</div>`;
+        let eventTxt = i.eventName ? `<span class="badge" style="background:#dbeafe; color:#1e40af;">${i.eventName}</span>` : '';
+        return `<div>${eventTxt} <b>${i.name}</b> (${i.member}) - $${i.price} ${pokaTxt}</div>`;
       }).join('');
 
       let orderPokaTxt = o.hasOrderPoka ? `<span class="badge badge-poka">${o.orderPokaMember || '無'}</span>` : '-';
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><b>${o.eventName}</b></td>
         <td>${o.orderDate || '-'}</td>
         <td>${o.platform || '-'}</td>
         <td>${o.shipMonth || '-'}</td>
         <td>${o.arrivalDate || '-'}</td>
         <td>${itemsSummary}</td>
         <td>${orderPokaTxt}</td>
-        <td><b>NT$ ${o.grandTotal}</b></td>
+        <td><b>NT$ ${o.grandTotal}</b> <br><small style="color:#64748b;">(運$${o.shippingFee||0}/手$${o.fee||0}/折$${o.discount||0})</small></td>
       `;
       tbody.appendChild(tr);
     });

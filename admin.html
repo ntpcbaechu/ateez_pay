@@ -33,7 +33,7 @@
     .card-title { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #334155; }
     
     /* Horizontal Sheet Inputs */
-    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
     
     .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
     .items-table th, .items-table td { padding: 8px; text-align: left; border: 1px solid #e2e8f0; }
@@ -76,21 +76,16 @@
 
     <!-- 橫向快速新增列 -->
     <div class="card">
-      <div class="card-title">⚡ 快速新增訂單 (橫向輸入)</div>
+      <div class="card-title">⚡ 快速新增訂單/結帳單 (橫向輸入)</div>
       <form id="order-form">
         <div class="sheet-grid">
-          <div class="form-control">
-            <label>活動名稱</label>
-            <input type="text" id="event-name" list="events-list" required placeholder="選擇或輸入">
-            <datalist id="events-list"></datalist>
-          </div>
           <div class="form-control">
             <label>下單日期</label>
             <input type="date" id="order-date" required>
           </div>
           <div class="form-control">
             <label>購入平台</label>
-            <input type="text" id="platform">
+            <input type="text" id="platform" placeholder="例如: KOCA">
           </div>
           <div class="form-control">
             <label>預計出貨</label>
@@ -105,15 +100,21 @@
             <input type="number" id="shipping-fee" value="0" min="0">
           </div>
           <div class="form-control">
+            <label>手續費</label>
+            <input type="number" id="fee" value="0" min="0">
+          </div>
+          <div class="form-control">
             <label>折扣</label>
             <input type="number" id="discount" value="0" min="0">
           </div>
         </div>
 
         <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項：</label>
+        <datalist id="events-list"></datalist>
         <table class="items-table">
           <thead>
             <tr>
+              <th>活動名稱</th>
               <th>品項名稱</th>
               <th>成員</th>
               <th>金額</th>
@@ -128,7 +129,7 @@
 
         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
           <div>
-            <label><input type="checkbox" id="order-has-poka"> 滿額卡</label>
+            <label><input type="checkbox" id="order-has-poka"> 整筆滿額卡</label>
             <select id="order-poka-member" style="display:none; width:auto; margin-left:10px; padding:4px 8px;"></select>
           </div>
           <button type="submit" class="btn btn-success" style="padding:10px 24px; font-size:16px;">💾 儲存這筆訂單</button>
@@ -142,11 +143,10 @@
       <table class="records-table">
         <thead>
           <tr>
-            <th>活動名稱</th>
             <th>下單日</th>
             <th>平台</th>
             <th>總金額</th>
-            <th>商品與小卡細項</th>
+            <th>商品與細項 (含活動/小卡)</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -239,6 +239,7 @@
   function addItemRow() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td><input type="text" class="item-event" list="events-list" placeholder="選擇或輸入活動"></td>
       <td><input type="text" class="item-name" required placeholder="品項名稱"></td>
       <td><select class="item-member" required></select></td>
       <td><input type="number" class="item-price" required min="0" value="0"></td>
@@ -274,18 +275,21 @@
   // Submit Order
   document.getElementById('order-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    const eventName = document.getElementById('event-name').value.trim();
-
-    if (eventName) {
-      set(ref(db, `events/${eventName.replace(/[.#$\[\]]/g, "_")}`), eventName);
-    }
 
     const items = [];
     let itemsTotal = 0;
+
     document.querySelectorAll('#items-tbody tr').forEach(tr => {
       const price = Number(tr.querySelector('.item-price').value) || 0;
+      const eventName = tr.querySelector('.item-event').value.trim();
+
+      if (eventName) {
+        set(ref(db, `events/${eventName.replace(/[.#$\[\]]/g, "_")}`), eventName);
+      }
+
       itemsTotal += price;
       items.push({
+        eventName: eventName,
         name: tr.querySelector('.item-name').value,
         member: tr.querySelector('.item-member').value,
         price: price,
@@ -295,17 +299,18 @@
     });
 
     const shippingFee = Number(document.getElementById('shipping-fee').value) || 0;
+    const fee = Number(document.getElementById('fee').value) || 0;
     const discount = Number(document.getElementById('discount').value) || 0;
 
     const orderData = {
-      eventName: eventName,
       orderDate: document.getElementById('order-date').value,
       platform: document.getElementById('platform').value,
       shipMonth: document.getElementById('ship-month').value,
       arrivalDate: document.getElementById('arrival-date').value,
       shippingFee: shippingFee,
+      fee: fee,
       discount: discount,
-      grandTotal: itemsTotal + shippingFee - discount,
+      grandTotal: itemsTotal + shippingFee + fee - discount,
       hasOrderPoka: document.getElementById('order-has-poka').checked,
       orderPokaMember: document.getElementById('order-has-poka').checked ? document.getElementById('order-poka-member').value : '',
       items: items,
@@ -330,11 +335,10 @@
 
       Object.keys(data).reverse().forEach(key => {
         const o = data[key];
-        let itemsTxt = (o.items || []).map(i => `${i.name}(${i.member})`).join(', ');
+        let itemsTxt = (o.items || []).map(i => `${i.eventName ? '['+i.eventName+'] ' : ''}${i.name}(${i.member})`).join(', ');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><b>${o.eventName}</b></td>
           <td>${o.orderDate || '-'}</td>
           <td>${o.platform || '-'}</td>
           <td>NT$ ${o.grandTotal}</td>
@@ -343,7 +347,7 @@
         `;
 
         tr.querySelector('.del-btn').addEventListener('click', () => {
-          if (confirm(`確定刪除 ${o.eventName} 的這筆紀錄？`)) {
+          if (confirm(`確定刪除此筆紀錄？`)) {
             remove(ref(db, `orders/${key}`));
           }
         });
