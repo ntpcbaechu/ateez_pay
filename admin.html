@@ -33,9 +33,12 @@
     .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
 
     /* 卡片式雙行商品細項 */
-    .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; position: relative; }
+    .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 15px; position: relative; }
     .item-card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
-    .item-card-row:last-child { margin-bottom: 0; }
+    
+    /* 隨機內容區塊 */
+    .inclusions-box { background: #ffffff; border: 1px dashed #cbd5e0; padding: 10px; border-radius: 6px; margin-top: 8px; }
+    .inclusion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
     
     .records-table { width: 100%; border-collapse: collapse; font-size: 14px; }
     .records-table th, .records-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
@@ -105,7 +108,7 @@
           </div>
         </div>
 
-        <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項 (雙行填寫)：</label>
+        <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項：</label>
         <datalist id="events-list"></datalist>
         
         <div id="items-container" style="margin-top:10px;"></div>
@@ -217,6 +220,42 @@
 
   const itemsContainer = document.getElementById('items-container');
 
+  // 新增隨機物品單列
+  function createInclusionRow(incContainer, data = {}) {
+    const row = document.createElement('div');
+    row.className = 'inclusion-row';
+    row.innerHTML = `
+      <select class="inc-type" style="padding:4px; font-size:12px;">
+        <option value="隨機小卡">隨機小卡</option>
+        <option value="海報/摺疊海報">海報/摺疊海報</option>
+        <option value="大卡/明信片">大卡/明信片</option>
+        <option value="拍立得">拍立得</option>
+        <option value="貼紙/書籤">貼紙/書籤</option>
+        <option value="其他">其他</option>
+      </select>
+      <input type="text" class="inc-custom-type" placeholder="自訂種類" style="display:${data.type === '其他' ? 'inline-block' : 'none'}; padding:4px; font-size:12px; width:100px;" value="${data.customType || ''}">
+      <span style="font-size:12px;">成員:</span>
+      <select class="inc-member" style="padding:4px; font-size:12px;"></select>
+      <button type="button" class="btn btn-danger remove-inc-btn" style="padding:2px 6px; font-size:11px;">✕</button>
+    `;
+
+    const typeSel = row.querySelector('.inc-type');
+    const customInp = row.querySelector('.inc-custom-type');
+    const memberSel = row.querySelector('.inc-member');
+
+    populateSelect(memberSel, membersData);
+
+    if (data.type) typeSel.value = data.type;
+    if (data.member) memberSel.value = data.member;
+
+    typeSel.addEventListener('change', () => {
+      customInp.style.display = typeSel.value === '其他' ? 'inline-block' : 'none';
+    });
+
+    row.querySelector('.remove-inc-btn').addEventListener('click', () => row.remove());
+    incContainer.appendChild(row);
+  }
+
   function addItemCard(data = {}) {
     const card = document.createElement('div');
     card.className = 'item-card';
@@ -244,7 +283,7 @@
           <input type="text" class="item-custom-category" placeholder="輸入分類" value="${data.customCategory || ''}">
         </div>
         <div class="form-control">
-          <label>成員</label>
+          <label>主成員</label>
           <select class="item-member" required></select>
         </div>
       </div>
@@ -276,30 +315,43 @@
             <option value="已售出">已售出</option>
           </select>
         </div>
-        <div class="form-control" style="display:flex; align-items:center; gap:5px; margin-top:20px;">
-          <label><input type="checkbox" class="item-has-poka" ${data.hasPoka ? 'checked' : ''}> 附小卡</label>
-          <select class="item-poka-member" style="display:${data.hasPoka ? 'inline-block' : 'none'}; width:auto;"></select>
-          <button type="button" class="btn btn-danger remove-card-btn" style="margin-left:auto; padding:2px 8px; font-size:12px;">刪除商品</button>
+        <div style="display:flex; align-items:flex-end;">
+          <button type="button" class="btn btn-danger remove-card-btn" style="margin-left:auto; padding:4px 10px; font-size:12px; height:34px;">刪除商品</button>
         </div>
+      </div>
+
+      <!-- 隨機內容動態配置區塊 -->
+      <div class="inclusions-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:12px; font-weight:bold; color:#475569;">🎁 拆出/隨機內容配置：</span>
+          <button type="button" class="btn add-inc-btn" style="padding:2px 8px; font-size:11px; background:#8b5cf6;">+ 新增隨機內容</button>
+        </div>
+        <div class="inc-rows-container"></div>
       </div>
     `;
 
     populateSelect(card.querySelector('.item-member'), membersData);
-    populateSelect(card.querySelector('.item-poka-member'), pokaData);
 
     if (data.category) card.querySelector('.item-category').value = data.category;
     if (data.member) card.querySelector('.item-member').value = data.member;
     if (data.currency) card.querySelector('.item-currency').value = data.currency;
     if (data.status) card.querySelector('.item-status').value = data.status;
-    if (data.pokaMember) card.querySelector('.item-poka-member').value = data.pokaMember;
 
     const catSel = card.querySelector('.item-category');
     const customBox = card.querySelector('.item-custom-cat-box');
     catSel.addEventListener('change', () => customBox.style.display = catSel.value === '其他' ? 'block' : 'none');
 
-    const chk = card.querySelector('.item-has-poka');
-    const pokaSel = card.querySelector('.item-poka-member');
-    chk.addEventListener('change', () => pokaSel.style.display = chk.checked ? 'inline-block' : 'none');
+    const incContainer = card.querySelector('.inc-rows-container');
+    
+    // 如果有舊資料 (inclusions)
+    if (data.inclusions && data.inclusions.length > 0) {
+      data.inclusions.forEach(inc => createInclusionRow(incContainer, inc));
+    } else if (data.hasPoka) {
+      // 相容舊資料
+      createInclusionRow(incContainer, { type: '隨機小卡', member: data.pokaMember });
+    }
+
+    card.querySelector('.add-inc-btn').addEventListener('click', () => createInclusionRow(incContainer));
 
     card.querySelector('.remove-card-btn').addEventListener('click', () => {
       if (itemsContainer.children.length > 1) card.remove();
@@ -327,7 +379,7 @@
     initForm();
   });
 
-  // Submit Form (Add or Edit)
+  // Submit Form
   document.getElementById('order-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
@@ -353,6 +405,16 @@
 
       if (twdPrice !== '') itemsTotalTwd += Number(twdPrice);
 
+      // 收集隨機內容
+      const inclusions = [];
+      card.querySelectorAll('.inclusion-row').forEach(incRow => {
+        inclusions.push({
+          type: incRow.querySelector('.inc-type').value,
+          customType: incRow.querySelector('.inc-custom-type').value,
+          member: incRow.querySelector('.inc-member').value
+        });
+      });
+
       items.push({
         eventName: eventName,
         name: name,
@@ -363,8 +425,7 @@
         origPrice: origPrice !== '' ? Number(origPrice) : '',
         twdPrice: twdPrice !== '' ? Number(twdPrice) : '',
         status: card.querySelector('.item-status').value,
-        hasPoka: card.querySelector('.item-has-poka').checked,
-        pokaMember: card.querySelector('.item-has-poka').checked ? card.querySelector('.item-poka-member').value : ''
+        inclusions: inclusions
       });
     });
 

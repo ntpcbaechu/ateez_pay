@@ -77,7 +77,7 @@
           <th>購入平台</th>
           <th>預計出貨</th>
           <th>到貨日期</th>
-          <th>購買商品細項</th>
+          <th>購買商品與隨機內容細項</th>
           <th>整筆滿額卡</th>
           <th>總金額 (含運/手續/折扣)</th>
         </tr>
@@ -126,7 +126,6 @@
       total += Number(o.grandTotal) || 0;
 
       let itemsSummary = (o.items || []).map(i => {
-        let pokaTxt = i.hasPoka ? `<span class="badge badge-poka">卡:${i.pokaMember || '無'}</span>` : '';
         let eventTxt = i.eventName ? `<span class="badge" style="background:#dbeafe; color:#1e40af;">${i.eventName}</span>` : '';
         let catTxt = `<span class="badge">${i.category === '其他' ? (i.customCategory || '其他') : i.category}</span>`;
         let statusTxt = `<span class="badge badge-status">${i.status || '已訂購'}</span>`;
@@ -140,7 +139,20 @@
           priceTxt = `NT$ 0`;
         }
 
-        return `<div style="margin-bottom:4px;">${eventTxt} ${catTxt} <b>${i.name}</b> (${i.member}) - ${priceTxt} ${statusTxt} ${pokaTxt}</div>`;
+        // 渲染隨機內容
+        let inclusionsHtml = '';
+        if (i.inclusions && i.inclusions.length > 0) {
+          let incTxts = i.inclusions.map(inc => {
+            let typeName = inc.type === '其他' ? (inc.customType || '其他') : inc.type;
+            return `${typeName}:${inc.member || '未選'}`;
+          }).join(' | ');
+          inclusionsHtml = `<br><span class="badge badge-poka" style="margin-left:0; margin-top:2px;">🎁 拆出：${incTxts}</span>`;
+        } else if (i.hasPoka) {
+          // 舊版單一小卡相容
+          inclusionsHtml = `<br><span class="badge badge-poka" style="margin-left:0; margin-top:2px;">🎁 小卡：${i.pokaMember || '無'}</span>`;
+        }
+
+        return `<div style="margin-bottom:6px;">${eventTxt} ${catTxt} <b>${i.name}</b> (${i.member}) - ${priceTxt} ${statusTxt} ${inclusionsHtml}</div>`;
       }).join('');
 
       let orderPokaTxt = o.hasOrderPoka ? `<span class="badge badge-poka">${o.orderPokaMember || '無'}</span>` : '-';
