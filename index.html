@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ateez_pay - 購買紀錄</title>
+  <title>ateez_pay - 雲端記帳</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
@@ -19,7 +19,7 @@
     li:last-child { border-bottom: none; }
     .item-name { font-weight: 500; }
     .item-price { color: #e53e3e; font-weight: bold; }
-    .delete-btn { background: #e53e3e; padding: 4px 8px; font-size: 12px; }
+    .delete-btn { background: #e53e3e; padding: 4px 8px; font-size: 12px; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .delete-btn:hover { background: #c53030; }
   </style>
 </head>
@@ -41,8 +41,24 @@
   <ul id="item-list"></ul>
 </div>
 
-<script>
-  let items = JSON.parse(localStorage.getItem('ateez_pay_items')) || [];
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  // 填入你的 ateezpay Firebase 專案設定
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZiROSpWeL18xBlmsVc-TKHmDOimPXK0g",
+    authDomain: "ateezpay.firebaseapp.com",
+    databaseURL: "https://ateezpay-default-rtdb.firebaseio.com",
+    projectId: "ateezpay",
+    storageBucket: "ateezpay.firebasestorage.app",
+    messagingSenderId: "448106458713",
+    appId: "1:448106458713:web:9a3e6ed896a4eee7378b48"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const itemsRef = ref(db, 'records');
 
   const form = document.getElementById('pay-form');
   const nameInput = document.getElementById('item-name');
@@ -50,44 +66,51 @@
   const list = document.getElementById('item-list');
   const totalEl = document.getElementById('total');
 
-  function render() {
+  // 即時監聽資料庫
+  onValue(itemsRef, (snapshot) => {
     list.innerHTML = '';
     let total = 0;
-    
-    items.forEach((item, index) => {
-      total += Number(item.price);
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span class="item-name">${item.name}</span>
-        <div>
-          <span class="item-price">NT$ ${item.price}</span>
-          <button class="delete-btn" onclick="deleteItem(${index})">刪除</button>
-        </div>
-      `;
-      list.appendChild(li);
-    });
+    const data = snapshot.val();
+
+    if (data) {
+      Object.keys(data).forEach((key) => {
+        const item = data[key];
+        total += Number(item.price);
+        
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="item-name">${item.name}</span>
+          <div>
+            <span class="item-price">NT$ ${item.price}</span>
+            <button class="delete-btn" data-key="${key}">刪除</button>
+          </div>
+        `;
+        list.appendChild(li);
+      });
+
+      // 綁定刪除功能
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const itemKey = e.target.getAttribute('data-key');
+          remove(ref(db, `records/${itemKey}`));
+        });
+      });
+    }
 
     totalEl.textContent = total;
-    localStorage.setItem('ateez_pay_items', JSON.stringify(items));
-  }
+  });
 
+  // 新增資料
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    items.push({
+    push(itemsRef, {
       name: nameInput.value,
-      price: priceInput.value
+      price: priceInput.value,
+      timestamp: Date.now()
     });
     nameInput.value = '';
     priceInput.value = '';
-    render();
   });
-
-  function deleteItem(index) {
-    items.splice(index, 1);
-    render();
-  }
-
-  render();
 </script>
 
 </body>
