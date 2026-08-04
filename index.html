@@ -30,12 +30,21 @@
 
     .table-container { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
-    th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f1f5f9; font-weight: 600; color: #475569; }
+    th, td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    th { background: #f1f5f9; font-weight: 600; color: #475569; white-space: nowrap; }
     tr:last-child td { border-bottom: none; }
     
-    .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 4px; font-size: 12px; color: #334155; margin-left: 4px; }
-    .badge-poka { background: #fef3c7; color: #92400e; }
+    /* 商品與活動細項排版優化 */
+    .event-group { margin-bottom: 12px; }
+    .event-group:last-child { margin-bottom: 0; }
+    .event-header { font-size: 13px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 6px; }
+    
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 4px 10px; font-size: 14px; }
+    .item-left { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .item-right { display: flex; align-items: center; gap: 10px; margin-left: 20px; white-space: nowrap; }
+
+    .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 4px; font-size: 12px; color: #334155; }
+    .badge-poka { background: #fef3c7; color: #92400e; font-size: 12px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-left: 10px; margin-top: 2px; }
     .badge-status { background: #dcfce7; color: #166534; font-weight: 600; }
     .badge-pending { background: #fee2e2; color: #991b1b; }
   </style>
@@ -77,7 +86,7 @@
           <th>購入平台</th>
           <th>預計出貨</th>
           <th>到貨日期</th>
-          <th>購買商品與隨機內容細項</th>
+          <th style="width: 50%;">購買商品與隨機內容細項</th>
           <th>整筆滿額卡</th>
           <th>總金額 (含運/手續/折扣)</th>
         </tr>
@@ -125,33 +134,63 @@
       const o = data[key];
       total += Number(o.grandTotal) || 0;
 
-      let itemsSummary = (o.items || []).map(i => {
-        let eventTxt = i.eventName ? `<span class="badge" style="background:#dbeafe; color:#1e40af;">${i.eventName}</span>` : '';
-        let catTxt = `<span class="badge">${i.category === '其他' ? (i.customCategory || '其他') : i.category}</span>`;
-        let statusTxt = `<span class="badge badge-status">${i.status || '已訂購'}</span>`;
-        
-        let priceTxt = '';
-        if (i.twdPrice !== '' && i.twdPrice !== undefined && i.twdPrice !== null) {
-          priceTxt = `NT$ ${i.twdPrice}`;
-        } else if (i.origPrice) {
-          priceTxt = `<span class="badge badge-pending">待結算 (${i.currency || 'KRW'} ${i.origPrice})</span>`;
-        } else {
-          priceTxt = `NT$ 0`;
-        }
+      // 按活動歸類商品
+      const eventsMap = {};
+      (o.items || []).forEach(item => {
+        const eName = item.eventName || '一般商品 / 未填活動';
+        if (!eventsMap[eName]) eventsMap[eName] = [];
+        eventsMap[eName].push(item);
+      });
 
-        let inclusionsHtml = '';
-        if (i.inclusions && i.inclusions.length > 0) {
-          let incTxts = i.inclusions.map(inc => {
-            let typeName = inc.type === '其他' ? (inc.customType || '其他') : inc.type;
-            return `${typeName}:${inc.member || '未選'}`;
-          }).join(' | ');
-          inclusionsHtml = `<br><span class="badge badge-poka" style="margin-left:0; margin-top:2px;">🎁 拆出：${incTxts}</span>`;
-        } else if (i.hasPoka) {
-          inclusionsHtml = `<br><span class="badge badge-poka" style="margin-left:0; margin-top:2px;">🎁 小卡：${i.pokaMember || '無'}</span>`;
-        }
+      let itemsSummaryHtml = '';
+      Object.keys(eventsMap).forEach(eName => {
+        let itemsHtml = eventsMap[eName].map(i => {
+          let catTxt = `<span class="badge">${i.category === '其他' ? (i.customCategory || '其他') : i.category}</span>`;
+          let statusTxt = `<span class="badge badge-status">${i.status || '已訂購'}</span>`;
+          
+          let priceTxt = '';
+          if (i.twdPrice !== '' && i.twdPrice !== undefined && i.twdPrice !== null) {
+            priceTxt = `<b>NT$ ${i.twdPrice}</b>`;
+          } else if (i.origPrice) {
+            priceTxt = `<span class="badge badge-pending">待結算 (${i.currency || 'KRW'} ${i.origPrice})</span>`;
+          } else {
+            priceTxt = `NT$ 0`;
+          }
 
-        return `<div style="margin-bottom:6px;">${eventTxt} ${catTxt} <b>${i.name}</b> (${i.member}) - ${priceTxt} ${statusTxt} ${inclusionsHtml}</div>`;
-      }).join('');
+          let inclusionsHtml = '';
+          if (i.inclusions && i.inclusions.length > 0) {
+            let incTxts = i.inclusions.map(inc => {
+              let typeName = inc.type === '其他' ? (inc.customType || '其他') : inc.type;
+              return `${typeName}:${inc.member || '未選'}`;
+            }).join(' | ');
+            inclusionsHtml = `<div><span class="badge badge-poka">🎁 拆出：${incTxts}</span></div>`;
+          } else if (i.hasPoka) {
+            inclusionsHtml = `<div><span class="badge badge-poka">🎁 小卡：${i.pokaMember || '無'}</span></div>`;
+          }
+
+          return `
+            <div>
+              <div class="item-row">
+                <div class="item-left">
+                  ${catTxt} <span><b>${i.name}</b> (${i.member || '無'})</span>
+                </div>
+                <div class="item-right">
+                  ${priceTxt}
+                  ${statusTxt}
+                </div>
+              </div>
+              ${inclusionsHtml}
+            </div>
+          `;
+        }).join('');
+
+        itemsSummaryHtml += `
+          <div class="event-group">
+            <div class="event-header">🏷️ ${eName}</div>
+            ${itemsHtml}
+          </div>
+        `;
+      });
 
       let orderPokaTxt = o.hasOrderPoka ? `<span class="badge badge-poka">${o.orderPokaMember || '無'}</span>` : '-';
 
@@ -161,7 +200,7 @@
         <td>${o.platform || '-'}</td>
         <td>${o.shipMonth || '-'}</td>
         <td>${o.arrivalDate || '-'}</td>
-        <td>${itemsSummary}</td>
+        <td>${itemsSummaryHtml}</td>
         <td>${orderPokaTxt}</td>
         <td><b>NT$ ${(o.grandTotal || 0).toLocaleString()}</b> <br><small style="color:#64748b;">(運$${o.shippingFee||0}/手$${o.fee||0}/折$${o.discount||0})</small></td>
       `;
