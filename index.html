@@ -7,15 +7,26 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
-    .container { max-width: 1000px; margin: 0 auto; }
+    .container { max-width: 1050px; margin: 0 auto; }
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     h1 { margin: 0; font-size: 24px; color: #0f172a; }
     .admin-link { color: #3b82f6; text-decoration: none; font-weight: 600; font-size: 14px; }
     .admin-link:hover { text-decoration: underline; }
     
-    .summary-card { background: linear-gradient(135deg, #4f46e5, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .summary-card { background: linear-gradient(135deg, #4f46e5, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     .summary-card h2 { margin: 0; font-size: 14px; opacity: 0.9; font-weight: normal; }
     .summary-card .amount { font-size: 32px; font-weight: 800; margin-top: 5px; }
+
+    .stats-btns { display: flex; gap: 10px; margin-bottom: 20px; }
+    .btn-stat { background: #e2e8f0; color: #334155; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-stat.active { background: #2563eb; color: white; }
+
+    .stats-panel { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 25px; display: none; }
+    .stats-panel.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .stat-box { background: #f8fafc; border: 1px solid #cbd5e0; padding: 12px; border-radius: 8px; text-align: center; }
+    .stat-box .title { font-size: 13px; color: #64748b; }
+    .stat-box .val { font-size: 18px; font-weight: bold; color: #0f172a; margin-top: 4px; }
 
     .table-container { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
@@ -25,6 +36,8 @@
     
     .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 4px; font-size: 12px; color: #334155; margin-left: 4px; }
     .badge-poka { background: #fef3c7; color: #92400e; }
+    .badge-status { background: #dcfce7; color: #166534; font-weight: 600; }
+    .badge-pending { background: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -36,8 +49,24 @@
   </header>
 
   <div class="summary-card">
-    <h2>總消費金額</h2>
+    <h2>已結算總花費 (NT$)</h2>
     <div class="amount">NT$ <span id="grand-total">0</span></div>
+  </div>
+
+  <div class="stats-btns">
+    <button class="btn-stat active" onclick="toggleStat('none')">隱藏統計</button>
+    <button class="btn-stat" onclick="toggleStat('month')">📅 每月統計</button>
+    <button class="btn-stat" onclick="toggleStat('category')">🏷️ 分類統計</button>
+  </div>
+
+  <div id="stat-month" class="stats-panel">
+    <h3>月份消費統計 (NT$)</h3>
+    <div class="stats-grid" id="month-grid"></div>
+  </div>
+
+  <div id="stat-category" class="stats-panel">
+    <h3>分類消費統計 (NT$)</h3>
+    <div class="stats-grid" id="category-grid"></div>
   </div>
 
   <div class="table-container">
@@ -48,9 +77,9 @@
           <th>購入平台</th>
           <th>預計出貨</th>
           <th>到貨日期</th>
-          <th>購買商品與活動細項</th>
-          <th>滿額卡</th>
-          <th>總金額 (含運/手續費/折扣)</th>
+          <th>購買商品細項</th>
+          <th>整筆滿額卡</th>
+          <th>總金額 (含運/手續/折扣)</th>
         </tr>
       </thead>
       <tbody id="records-tbody">
@@ -77,11 +106,14 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
+  let globalOrders = [];
+
   onValue(ref(db, 'orders'), (snapshot) => {
     const tbody = document.getElementById('records-tbody');
     tbody.innerHTML = '';
     let total = 0;
     const data = snapshot.val();
+    globalOrders = data ? Object.values(data) : [];
 
     if (!data) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">目前尚無紀錄</td></tr>';
@@ -96,7 +128,19 @@
       let itemsSummary = (o.items || []).map(i => {
         let pokaTxt = i.hasPoka ? `<span class="badge badge-poka">卡:${i.pokaMember || '無'}</span>` : '';
         let eventTxt = i.eventName ? `<span class="badge" style="background:#dbeafe; color:#1e40af;">${i.eventName}</span>` : '';
-        return `<div>${eventTxt} <b>${i.name}</b> (${i.member}) - $${i.price} ${pokaTxt}</div>`;
+        let catTxt = `<span class="badge">${i.category === '其他' ? (i.customCategory || '其他') : i.category}</span>`;
+        let statusTxt = `<span class="badge badge-status">${i.status || '已訂購'}</span>`;
+        
+        let priceTxt = '';
+        if (i.twdPrice !== '' && i.twdPrice !== undefined && i.twdPrice !== null) {
+          priceTxt = `NT$ ${i.twdPrice}`;
+        } else if (i.origPrice) {
+          priceTxt = `<span class="badge badge-pending">待結算 (${i.currency || 'KRW'} ${i.origPrice})</span>`;
+        } else {
+          priceTxt = `NT$ 0`;
+        }
+
+        return `<div style="margin-bottom:4px;">${eventTxt} ${catTxt} <b>${i.name}</b> (${i.member}) - ${priceTxt} ${statusTxt} ${pokaTxt}</div>`;
       }).join('');
 
       let orderPokaTxt = o.hasOrderPoka ? `<span class="badge badge-poka">${o.orderPokaMember || '無'}</span>` : '-';
@@ -109,13 +153,52 @@
         <td>${o.arrivalDate || '-'}</td>
         <td>${itemsSummary}</td>
         <td>${orderPokaTxt}</td>
-        <td><b>NT$ ${o.grandTotal}</b> <br><small style="color:#64748b;">(運$${o.shippingFee||0}/手$${o.fee||0}/折$${o.discount||0})</small></td>
+        <td><b>NT$ ${(o.grandTotal || 0).toLocaleString()}</b> <br><small style="color:#64748b;">(運$${o.shippingFee||0}/手$${o.fee||0}/折$${o.discount||0})</small></td>
       `;
       tbody.appendChild(tr);
     });
 
     document.getElementById('grand-total').textContent = total.toLocaleString();
+    renderStats();
   });
+
+  window.toggleStat = function(type) {
+    document.querySelectorAll('.stats-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.btn-stat').forEach(b => b.classList.remove('active'));
+    if (type === 'month') {
+      document.getElementById('stat-month').classList.add('active');
+    } else if (type === 'category') {
+      document.getElementById('stat-category').classList.add('active');
+    }
+  };
+
+  function renderStats() {
+    const monthMap = {};
+    const catMap = {};
+
+    globalOrders.forEach(o => {
+      const month = o.orderDate ? o.orderDate.slice(0, 7) : '未分類日期';
+      monthMap[month] = (monthMap[month] || 0) + (Number(o.grandTotal) || 0);
+
+      (o.items || []).forEach(i => {
+        const cat = i.category === '其他' ? (i.customCategory || '其他') : (i.category || '未分類');
+        const price = Number(i.twdPrice) || 0;
+        catMap[cat] = (catMap[cat] || 0) + price;
+      });
+    });
+
+    const mGrid = document.getElementById('month-grid');
+    mGrid.innerHTML = '';
+    Object.keys(monthMap).sort().reverse().forEach(m => {
+      mGrid.innerHTML += `<div class="stat-box"><div class="title">${m}</div><div class="val">NT$ ${monthMap[m].toLocaleString()}</div></div>`;
+    });
+
+    const cGrid = document.getElementById('category-grid');
+    cGrid.innerHTML = '';
+    Object.keys(catMap).forEach(c => {
+      cGrid.innerHTML += `<div class="stat-box"><div class="title">${c}</div><div class="val">NT$ ${catMap[c].toLocaleString()}</div></div>`;
+    });
+  }
 </script>
 </body>
 </html>

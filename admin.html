@@ -9,13 +9,12 @@
     body { background-color: #f1f5f9; margin: 0; padding: 20px; color: #0f172a; }
     .container { max-width: 1200px; margin: 0 auto; }
     
-    /* Login Modal */
     #login-screen { position: fixed; inset: 0; background: rgba(15,23,42,0.8); display: flex; justify-content: center; align-items: center; z-index: 999; }
     .login-box { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     .login-box h2 { margin-top: 0; font-size: 20px; text-align: center; }
     
-    .form-control { margin-bottom: 15px; }
-    .form-control label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+    .form-control { margin-bottom: 12px; }
+    .form-control label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #475569; }
     .form-control input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
     
     .btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
@@ -25,21 +24,19 @@
     .btn-success { background: #10b981; }
     .btn-success:hover { background: #059669; }
 
-    /* Main Admin Section */
     #admin-content { display: none; }
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     
     .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
     .card-title { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #334155; }
     
-    /* Horizontal Sheet Inputs */
-    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; }
-    
-    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    .items-table th, .items-table td { padding: 8px; text-align: left; border: 1px solid #e2e8f0; }
-    .items-table th { background: #f8fafc; font-size: 13px; }
+    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
 
-    /* Records Table */
+    /* 卡片式雙行商品細項 */
+    .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; position: relative; }
+    .item-card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .item-card-row:last-child { margin-bottom: 0; }
+    
     .records-table { width: 100%; border-collapse: collapse; font-size: 14px; }
     .records-table th, .records-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
     .records-table th { background: #f8fafc; }
@@ -47,7 +44,6 @@
 </head>
 <body>
 
-<!-- Login Overlay -->
 <div id="login-screen">
   <div class="login-box">
     <h2>🔒 管理員登入</h2>
@@ -63,7 +59,6 @@
   </div>
 </div>
 
-<!-- Main Admin Panel -->
 <div class="container">
   <div id="admin-content">
     <header>
@@ -74,10 +69,11 @@
       </div>
     </header>
 
-    <!-- 橫向快速新增列 -->
     <div class="card">
-      <div class="card-title">⚡ 快速新增訂單/結帳單 (橫向輸入)</div>
+      <div class="card-title" id="form-title">⚡ 快速新增訂單/結帳單</div>
       <form id="order-form">
+        <input type="hidden" id="editing-key" value="">
+        
         <div class="sheet-grid">
           <div class="form-control">
             <label>下單日期</label>
@@ -96,48 +92,38 @@
             <input type="date" id="arrival-date">
           </div>
           <div class="form-control">
-            <label>運費</label>
+            <label>運費 (NT$)</label>
             <input type="number" id="shipping-fee" value="0" min="0">
           </div>
           <div class="form-control">
-            <label>手續費</label>
+            <label>手續費 (NT$)</label>
             <input type="number" id="fee" value="0" min="0">
           </div>
           <div class="form-control">
-            <label>折扣</label>
+            <label>折扣 (NT$)</label>
             <input type="number" id="discount" value="0" min="0">
           </div>
         </div>
 
-        <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項：</label>
+        <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項 (雙行填寫)：</label>
         <datalist id="events-list"></datalist>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>活動名稱</th>
-              <th>品項名稱</th>
-              <th>成員</th>
-              <th>金額</th>
-              <th>附小卡</th>
-              <th>小卡成員</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="items-tbody"></tbody>
-        </table>
-        <button type="button" class="btn" id="add-item-row-btn" style="background:#0284c7;">+ 新增商品</button>
+        
+        <div id="items-container" style="margin-top:10px;"></div>
+        <button type="button" class="btn" id="add-item-card-btn" style="background:#0284c7; margin-bottom:15px;">+ 新增一個商品卡片</button>
 
-        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+        <div style="padding-top: 15px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <label><input type="checkbox" id="order-has-poka"> 整筆滿額卡</label>
             <select id="order-poka-member" style="display:none; width:auto; margin-left:10px; padding:4px 8px;"></select>
           </div>
-          <button type="submit" class="btn btn-success" style="padding:10px 24px; font-size:16px;">💾 儲存這筆訂單</button>
+          <div>
+            <button type="button" class="btn" id="cancel-edit-btn" style="background:#64748b; display:none;">取消編輯</button>
+            <button type="submit" class="btn btn-success" style="padding:10px 24px; font-size:16px;">💾 儲存這筆訂單</button>
+          </div>
         </div>
       </form>
     </div>
 
-    <!-- 歷史紀錄管理與刪除 -->
     <div class="card">
       <div class="card-title">📜 歷史紀錄管理</div>
       <table class="records-table">
@@ -146,7 +132,7 @@
             <th>下單日</th>
             <th>平台</th>
             <th>總金額</th>
-            <th>商品與細項 (含活動/小卡)</th>
+            <th>商品與細項</th>
             <th>操作</th>
           </tr>
         </thead>
@@ -159,7 +145,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getDatabase, ref, push, onValue, remove, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDZiROSpWeL18xBlmsVc-TKHmDOimPXK0g",
@@ -177,8 +163,8 @@
 
   let membersData = [];
   let pokaData = [];
+  let rawOrdersData = {};
 
-  // Auth Status
   onAuthStateChanged(auth, (user) => {
     if (user) {
       document.getElementById('login-screen').style.display = 'none';
@@ -190,17 +176,13 @@
     }
   });
 
-  // Login
   document.getElementById('login-btn').addEventListener('click', () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-password').value;
-    signInWithEmailAndPassword(auth, email, pass).catch(err => alert('登入失敗: ' + err.message));
+    signInWithEmailAndPassword(auth, document.getElementById('login-email').value, document.getElementById('login-password').value)
+      .catch(err => alert('登入失敗: ' + err.message));
   });
 
-  // Logout
   document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
-  // Load JSON & Firebase
   async function loadInitialData() {
     try {
       const [r1, r2] = await Promise.all([fetch('./json/members.json'), fetch('./json/poka.json')]);
@@ -208,7 +190,6 @@
       pokaData = await r2.json();
     } catch(e) { console.error(e); }
 
-    // Datalist - Events
     onValue(ref(db, 'events'), (snap) => {
       const list = document.getElementById('events-list');
       list.innerHTML = '';
@@ -224,8 +205,8 @@
     listenRecords();
   }
 
-  function populateSelect(selectEl, data) {
-    selectEl.innerHTML = '<option value="">請選擇</option>';
+  function populateSelect(selectEl, data, defaultTxt = "請選擇") {
+    selectEl.innerHTML = `<option value="">${defaultTxt}</option>`;
     data.forEach(item => {
       const val = typeof item === 'string' ? item : (item.name || item.id);
       const opt = document.createElement('option');
@@ -234,69 +215,160 @@
     });
   }
 
-  const itemsTbody = document.getElementById('items-tbody');
+  const itemsContainer = document.getElementById('items-container');
 
-  function addItemRow() {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" class="item-event" list="events-list" placeholder="選擇或輸入活動"></td>
-      <td><input type="text" class="item-name" required placeholder="品項名稱"></td>
-      <td><select class="item-member" required></select></td>
-      <td><input type="number" class="item-price" required min="0" value="0"></td>
-      <td><input type="checkbox" class="item-has-poka"></td>
-      <td><select class="item-poka-member" style="display:none;"></select></td>
-      <td><button type="button" class="btn btn-danger remove-row-btn" style="padding:2px 8px; font-size:12px;">刪除</button></td>
+  function addItemCard(data = {}) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.innerHTML = `
+      <div class="item-card-row">
+        <div class="form-control">
+          <label>活動名稱</label>
+          <input type="text" class="item-event" list="events-list" placeholder="選擇/輸入" value="${data.eventName || ''}">
+        </div>
+        <div class="form-control">
+          <label>品項名稱</label>
+          <input type="text" class="item-name" required placeholder="例如:寫真集" value="${data.name || ''}">
+        </div>
+        <div class="form-control">
+          <label>分類</label>
+          <select class="item-category" required>
+            <option value="專輯">專輯</option>
+            <option value="小卡">小卡</option>
+            <option value="娃娃">娃娃</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-control item-custom-cat-box" style="display:${data.category === '其他' ? 'block' : 'none'};">
+          <label>自訂分類</label>
+          <input type="text" class="item-custom-category" placeholder="輸入分類" value="${data.customCategory || ''}">
+        </div>
+        <div class="form-control">
+          <label>成員</label>
+          <select class="item-member" required></select>
+        </div>
+      </div>
+
+      <div class="item-card-row">
+        <div class="form-control">
+          <label>幣別</label>
+          <select class="item-currency">
+            <option value="TWD">台幣 (TWD)</option>
+            <option value="KRW">韓幣 (KRW)</option>
+            <option value="JPY">日幣 (JPY)</option>
+            <option value="USD">美金 (USD)</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label>原幣金額</label>
+          <input type="number" class="item-orig-price" placeholder="例如:15000" min="0" value="${data.origPrice !== undefined ? data.origPrice : ''}">
+        </div>
+        <div class="form-control">
+          <label>台幣金額 (NT$)</label>
+          <input type="number" class="item-twd-price" placeholder="例如:380" min="0" value="${data.twdPrice !== undefined ? data.twdPrice : ''}">
+        </div>
+        <div class="form-control">
+          <label>狀態</label>
+          <select class="item-status">
+            <option value="已訂購">已訂購</option>
+            <option value="已到貨">已到貨</option>
+            <option value="交易中">交易中</option>
+            <option value="已售出">已售出</option>
+          </select>
+        </div>
+        <div class="form-control" style="display:flex; align-items:center; gap:5px; margin-top:20px;">
+          <label><input type="checkbox" class="item-has-poka" ${data.hasPoka ? 'checked' : ''}> 附小卡</label>
+          <select class="item-poka-member" style="display:${data.hasPoka ? 'inline-block' : 'none'}; width:auto;"></select>
+          <button type="button" class="btn btn-danger remove-card-btn" style="margin-left:auto; padding:2px 8px; font-size:12px;">刪除商品</button>
+        </div>
+      </div>
     `;
-    populateSelect(tr.querySelector('.item-member'), membersData);
-    populateSelect(tr.querySelector('.item-poka-member'), pokaData);
 
-    const chk = tr.querySelector('.item-has-poka');
-    const pokaSel = tr.querySelector('.item-poka-member');
-    chk.addEventListener('change', () => pokaSel.style.display = chk.checked ? 'block' : 'none');
+    populateSelect(card.querySelector('.item-member'), membersData);
+    populateSelect(card.querySelector('.item-poka-member'), pokaData);
 
-    tr.querySelector('.remove-row-btn').addEventListener('click', () => {
-      if (itemsTbody.children.length > 1) tr.remove();
+    if (data.category) card.querySelector('.item-category').value = data.category;
+    if (data.member) card.querySelector('.item-member').value = data.member;
+    if (data.currency) card.querySelector('.item-currency').value = data.currency;
+    if (data.status) card.querySelector('.item-status').value = data.status;
+    if (data.pokaMember) card.querySelector('.item-poka-member').value = data.pokaMember;
+
+    const catSel = card.querySelector('.item-category');
+    const customBox = card.querySelector('.item-custom-cat-box');
+    catSel.addEventListener('change', () => customBox.style.display = catSel.value === '其他' ? 'block' : 'none');
+
+    const chk = card.querySelector('.item-has-poka');
+    const pokaSel = card.querySelector('.item-poka-member');
+    chk.addEventListener('change', () => pokaSel.style.display = chk.checked ? 'inline-block' : 'none');
+
+    card.querySelector('.remove-card-btn').addEventListener('click', () => {
+      if (itemsContainer.children.length > 1) card.remove();
     });
 
-    itemsTbody.appendChild(tr);
+    itemsContainer.appendChild(card);
   }
 
   function initForm() {
-    itemsTbody.innerHTML = '';
-    addItemRow();
+    document.getElementById('editing-key').value = '';
+    document.getElementById('form-title').textContent = '⚡ 快速新增訂單/結帳單';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
+    itemsContainer.innerHTML = '';
+    addItemCard();
     populateSelect(document.getElementById('order-poka-member'), pokaData);
   }
 
-  document.getElementById('add-item-row-btn').addEventListener('click', addItemRow);
+  document.getElementById('add-item-card-btn').addEventListener('click', () => addItemCard());
   document.getElementById('order-has-poka').addEventListener('change', (e) => {
     document.getElementById('order-poka-member').style.display = e.target.checked ? 'inline-block' : 'none';
   });
 
-  // Submit Order
+  document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+    document.getElementById('order-form').reset();
+    initForm();
+  });
+
+  // Submit Form (Add or Edit)
   document.getElementById('order-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
     const items = [];
-    let itemsTotal = 0;
+    let itemsTotalTwd = 0;
+    let isValid = true;
 
-    document.querySelectorAll('#items-tbody tr').forEach(tr => {
-      const price = Number(tr.querySelector('.item-price').value) || 0;
-      const eventName = tr.querySelector('.item-event').value.trim();
+    document.querySelectorAll('.item-card').forEach((card, idx) => {
+      const name = card.querySelector('.item-name').value.trim();
+      const origPrice = card.querySelector('.item-orig-price').value;
+      const twdPrice = card.querySelector('.item-twd-price').value;
 
+      if (origPrice === '' && twdPrice === '') {
+        alert(`第 ${idx+1} 個商品 (${name}) 請至少填寫「原幣金額」或「台幣金額」其中一種！`);
+        isValid = false;
+        return;
+      }
+
+      const eventName = card.querySelector('.item-event').value.trim();
       if (eventName) {
         set(ref(db, `events/${eventName.replace(/[.#$\[\]]/g, "_")}`), eventName);
       }
 
-      itemsTotal += price;
+      if (twdPrice !== '') itemsTotalTwd += Number(twdPrice);
+
       items.push({
         eventName: eventName,
-        name: tr.querySelector('.item-name').value,
-        member: tr.querySelector('.item-member').value,
-        price: price,
-        hasPoka: tr.querySelector('.item-has-poka').checked,
-        pokaMember: tr.querySelector('.item-has-poka').checked ? tr.querySelector('.item-poka-member').value : ''
+        name: name,
+        category: card.querySelector('.item-category').value,
+        customCategory: card.querySelector('.item-custom-category').value,
+        member: card.querySelector('.item-member').value,
+        currency: card.querySelector('.item-currency').value,
+        origPrice: origPrice !== '' ? Number(origPrice) : '',
+        twdPrice: twdPrice !== '' ? Number(twdPrice) : '',
+        status: card.querySelector('.item-status').value,
+        hasPoka: card.querySelector('.item-has-poka').checked,
+        pokaMember: card.querySelector('.item-has-poka').checked ? card.querySelector('.item-poka-member').value : ''
       });
     });
+
+    if (!isValid) return;
 
     const shippingFee = Number(document.getElementById('shipping-fee').value) || 0;
     const fee = Number(document.getElementById('fee').value) || 0;
@@ -310,51 +382,88 @@
       shippingFee: shippingFee,
       fee: fee,
       discount: discount,
-      grandTotal: itemsTotal + shippingFee + fee - discount,
+      grandTotal: itemsTotalTwd + shippingFee + fee - discount,
       hasOrderPoka: document.getElementById('order-has-poka').checked,
       orderPokaMember: document.getElementById('order-has-poka').checked ? document.getElementById('order-poka-member').value : '',
       items: items,
       createdAt: Date.now()
     };
 
-    push(ref(db, 'orders'), orderData).then(() => {
-      document.getElementById('order-form').reset();
-      document.getElementById('order-poka-member').style.display = 'none';
-      initForm();
-      alert('儲存成功！');
-    });
+    const editKey = document.getElementById('editing-key').value;
+    if (editKey) {
+      update(ref(db, `orders/${editKey}`), orderData).then(() => {
+        alert('訂單修改成功！');
+        document.getElementById('order-form').reset();
+        initForm();
+      });
+    } else {
+      push(ref(db, 'orders'), orderData).then(() => {
+        alert('訂單新增成功！');
+        document.getElementById('order-form').reset();
+        initForm();
+      });
+    }
   });
 
-  // Render Admin Records
+  // Listen & Render Admin List
   function listenRecords() {
     onValue(ref(db, 'orders'), (snapshot) => {
       const tbody = document.getElementById('admin-records-tbody');
       tbody.innerHTML = '';
-      const data = snapshot.val();
-      if (!data) return;
+      rawOrdersData = snapshot.val() || {};
 
-      Object.keys(data).reverse().forEach(key => {
-        const o = data[key];
+      Object.keys(rawOrdersData).reverse().forEach(key => {
+        const o = rawOrdersData[key];
         let itemsTxt = (o.items || []).map(i => `${i.eventName ? '['+i.eventName+'] ' : ''}${i.name}(${i.member})`).join(', ');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${o.orderDate || '-'}</td>
           <td>${o.platform || '-'}</td>
-          <td>NT$ ${o.grandTotal}</td>
+          <td>NT$ ${(o.grandTotal || 0).toLocaleString()}</td>
           <td>${itemsTxt}</td>
-          <td><button class="btn btn-danger del-btn" data-key="${key}" style="padding:4px 8px; font-size:12px;">刪除</button></td>
+          <td>
+            <button class="btn edit-btn" data-key="${key}" style="padding:4px 8px; font-size:12px; background:#f59e0b;">✏️ 編輯</button>
+            <button class="btn btn-danger del-btn" data-key="${key}" style="padding:4px 8px; font-size:12px;">刪除</button>
+          </td>
         `;
 
+        tr.querySelector('.edit-btn').addEventListener('click', () => loadOrderToEdit(key));
         tr.querySelector('.del-btn').addEventListener('click', () => {
-          if (confirm(`確定刪除此筆紀錄？`)) {
-            remove(ref(db, `orders/${key}`));
-          }
+          if (confirm(`確定刪除此筆紀錄？`)) remove(ref(db, `orders/${key}`));
         });
 
         tbody.appendChild(tr);
       });
     });
+  }
+
+  // Edit logic
+  function loadOrderToEdit(key) {
+    const o = rawOrdersData[key];
+    if (!o) return;
+
+    document.getElementById('editing-key').value = key;
+    document.getElementById('form-title').textContent = '✏️ 編輯訂單/結帳單';
+    document.getElementById('cancel-edit-btn').style.display = 'inline-block';
+
+    document.getElementById('order-date').value = o.orderDate || '';
+    document.getElementById('platform').value = o.platform || '';
+    document.getElementById('ship-month').value = o.shipMonth || '';
+    document.getElementById('arrival-date').value = o.arrivalDate || '';
+    document.getElementById('shipping-fee').value = o.shippingFee || 0;
+    document.getElementById('fee').value = o.fee || 0;
+    document.getElementById('discount').value = o.discount || 0;
+
+    document.getElementById('order-has-poka').checked = !!o.hasOrderPoka;
+    const pokaSel = document.getElementById('order-poka-member');
+    pokaSel.style.display = o.hasOrderPoka ? 'inline-block' : 'none';
+    if (o.orderPokaMember) pokaSel.value = o.orderPokaMember;
+
+    itemsContainer.innerHTML = '';
+    (o.items || []).forEach(item => addItemCard(item));
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 </script>
 </body>
