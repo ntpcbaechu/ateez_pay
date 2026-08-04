@@ -15,7 +15,9 @@
     
     .form-control { margin-bottom: 12px; }
     .form-control label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #475569; }
-    .form-control input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+    
+    /* 讓輸入框與選單根據內容預設適當大小，不再硬性拉成 100% */
+    .form-control input, .form-control select { padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; width: 100%; }
     
     .btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
     .btn:hover { background: #1d4ed8; }
@@ -30,11 +32,23 @@
     .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
     .card-title { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #334155; }
     
-    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    .sheet-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; }
+    .sheet-grid .form-control { flex: 1 1 auto; min-width: 110px; }
 
     .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 15px; position: relative; }
-    .item-card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 8px; }
     
+    /* 改用 Flex 排版，短選項自動緊縮，長輸入框彈性伸展 */
+    .item-card-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; align-items: flex-end; }
+    
+    /* 設定不同欄位類型的彈性與寬度限制 */
+    .col-event { flex: 2 1 180px; }
+    .col-name { flex: 3 1 200px; }
+    .col-cat { flex: 0 0 auto; width: fit-content; min-width: 100px; }
+    .col-member { flex: 0 0 auto; width: fit-content; min-width: 100px; }
+    .col-curr { flex: 0 0 auto; width: fit-content; min-width: 110px; }
+    .col-price { flex: 1 1 110px; max-width: 150px; }
+    .col-status { flex: 0 0 auto; width: fit-content; min-width: 100px; }
+
     .inclusions-box { background: #ffffff; border: 1px dashed #cbd5e0; padding: 10px; border-radius: 6px; margin-top: 8px; }
     .inclusion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
     
@@ -76,31 +90,31 @@
         <input type="hidden" id="editing-key" value="">
         
         <div class="sheet-grid">
-          <div class="form-control">
+          <div class="form-control" style="max-width: 150px;">
             <label>下單日期</label>
             <input type="date" id="order-date" required>
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 160px;">
             <label>購入平台</label>
             <input type="text" id="platform" placeholder="例如: KOCA">
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 150px;">
             <label>預計出貨</label>
             <input type="month" id="ship-month">
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 150px;">
             <label>到貨日期</label>
             <input type="date" id="arrival-date">
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 110px;">
             <label>運費 (NT$)</label>
             <input type="number" id="shipping-fee" value="0" min="0">
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 110px;">
             <label>手續費 (NT$)</label>
             <input type="number" id="fee" value="0" min="0">
           </div>
-          <div class="form-control">
+          <div class="form-control" style="max-width: 110px;">
             <label>折扣 (NT$)</label>
             <input type="number" id="discount" value="0" min="0">
           </div>
@@ -199,7 +213,6 @@
       const defaultCats = await r3.json();
       const defaultStats = await r4.json();
 
-      // Firebase 分類監聽
       onValue(ref(db, 'categories'), (snap) => {
         const fbCats = snap.val() ? Object.values(snap.val()) : [];
         const setMap = new Set([...defaultCats, ...fbCats]);
@@ -213,7 +226,6 @@
         });
       });
 
-      // Firebase 狀態監聽
       onValue(ref(db, 'statuses'), (snap) => {
         const fbStats = snap.val() ? Object.values(snap.val()) : [];
         const setMap = new Set([...defaultStats, ...fbStats]);
@@ -269,7 +281,7 @@
     const row = document.createElement('div');
     row.className = 'inclusion-row';
     row.innerHTML = `
-      <select class="inc-type" style="padding:4px; font-size:12px;">
+      <select class="inc-type" style="padding:4px 8px; font-size:12px; width:fit-content;">
         <option value="隨機小卡">隨機小卡</option>
         <option value="海報/摺疊海報">海報/摺疊海報</option>
         <option value="大卡/明信片">大卡/明信片</option>
@@ -279,7 +291,7 @@
       </select>
       <input type="text" class="inc-custom-type" placeholder="自訂種類" style="display:${data.type === '其他' ? 'inline-block' : 'none'}; padding:4px; font-size:12px; width:100px;" value="${data.customType || ''}">
       <span style="font-size:12px;">成員:</span>
-      <select class="inc-member" style="padding:4px; font-size:12px;"></select>
+      <select class="inc-member" style="padding:4px 8px; font-size:12px; width:fit-content;"></select>
       <button type="button" class="btn btn-danger remove-inc-btn" style="padding:2px 6px; font-size:11px;">✕</button>
     `;
 
@@ -305,30 +317,30 @@
     card.className = 'item-card';
     card.innerHTML = `
       <div class="item-card-row">
-        <div class="form-control">
+        <div class="form-control col-event">
           <label>活動名稱</label>
           <input type="text" class="item-event" list="events-list" placeholder="選擇/輸入" value="${data.eventName || ''}">
         </div>
-        <div class="form-control">
+        <div class="form-control col-name">
           <label>品項名稱</label>
           <input type="text" class="item-name" required placeholder="例如:寫真集" value="${data.name || ''}">
         </div>
-        <div class="form-control">
+        <div class="form-control col-cat">
           <label>分類</label>
           <select class="item-category" required></select>
         </div>
-        <div class="form-control item-custom-cat-box" style="display:${data.category === '其他' ? 'block' : 'none'};">
+        <div class="form-control item-custom-cat-box" style="display:${data.category === '其他' ? 'block' : 'none'}; flex:0 0 110px;">
           <label>自訂分類</label>
           <input type="text" class="item-custom-category" placeholder="輸入分類" value="${data.customCategory || ''}">
         </div>
-        <div class="form-control">
+        <div class="form-control col-member">
           <label>主成員</label>
           <select class="item-member" required></select>
         </div>
       </div>
 
       <div class="item-card-row">
-        <div class="form-control">
+        <div class="form-control col-curr">
           <label>幣別</label>
           <select class="item-currency">
             <option value="TWD">台幣 (TWD)</option>
@@ -337,24 +349,24 @@
             <option value="USD">美金 (USD)</option>
           </select>
         </div>
-        <div class="form-control">
+        <div class="form-control col-price">
           <label>原幣金額</label>
           <input type="number" class="item-orig-price" placeholder="例如:15000" min="0" value="${data.origPrice !== undefined ? data.origPrice : ''}">
         </div>
-        <div class="form-control">
+        <div class="form-control col-price">
           <label>台幣金額 (NT$)</label>
           <input type="number" class="item-twd-price" placeholder="例如:380" min="0" value="${data.twdPrice !== undefined ? data.twdPrice : ''}">
         </div>
-        <div class="form-control">
+        <div class="form-control col-status">
           <label>狀態</label>
           <select class="item-status" required></select>
         </div>
-        <div class="form-control item-custom-status-box" style="display:${data.status === '其他' ? 'block' : 'none'};">
+        <div class="form-control item-custom-status-box" style="display:${data.status === '其他' ? 'block' : 'none'}; flex:0 0 110px;">
           <label>自訂狀態</label>
           <input type="text" class="item-custom-status" placeholder="輸入狀態" value="${data.customStatus || ''}">
         </div>
-        <div style="display:flex; align-items:flex-end;">
-          <button type="button" class="btn btn-danger remove-card-btn" style="margin-left:auto; padding:4px 10px; font-size:12px; height:34px;">刪除商品</button>
+        <div style="margin-left:auto; margin-bottom:12px;">
+          <button type="button" class="btn btn-danger remove-card-btn" style="padding:6px 12px; font-size:12px;">刪除商品</button>
         </div>
       </div>
 
@@ -418,7 +430,6 @@
     initForm();
   });
 
-  // Submit Form
   document.getElementById('order-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
