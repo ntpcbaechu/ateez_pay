@@ -15,8 +15,6 @@
     
     .form-control { margin-bottom: 12px; }
     .form-control label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #475569; }
-    
-    /* 讓輸入框與選單根據內容預設適當大小，不再硬性拉成 100% */
     .form-control input, .form-control select { padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; width: 100%; }
     
     .btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
@@ -36,11 +34,8 @@
     .sheet-grid .form-control { flex: 1 1 auto; min-width: 110px; }
 
     .item-card { background: #f8fafc; border: 1px solid #cbd5e0; border-radius: 8px; padding: 12px; margin-bottom: 15px; position: relative; }
-    
-    /* 改用 Flex 排版，短選項自動緊縮，長輸入框彈性伸展 */
     .item-card-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; align-items: flex-end; }
     
-    /* 設定不同欄位類型的彈性與寬度限制 */
     .col-event { flex: 2 1 180px; }
     .col-name { flex: 3 1 200px; }
     .col-cat { flex: 0 0 auto; width: fit-content; min-width: 100px; }
@@ -53,8 +48,10 @@
     .inclusion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
     
     .records-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .records-table th, .records-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    .records-table th, .records-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
     .records-table th { background: #f8fafc; }
+    .item-line { margin-bottom: 4px; }
+    .item-line:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -536,14 +533,19 @@
 
       Object.keys(rawOrdersData).reverse().forEach(key => {
         const o = rawOrdersData[key];
-        let itemsTxt = (o.items || []).map(i => `${i.eventName ? '['+i.eventName+'] ' : ''}${i.name}(${i.member})`).join(', ');
+        
+        // 渲染商品細項（每個商品換行展示）
+        let itemsHtml = (o.items || []).map(i => {
+          let eventTxt = i.eventName ? `<b>[${i.eventName}]</b> ` : '';
+          return `<div class="item-line">• ${eventTxt}${i.name} (${i.member || '無成員'})</div>`;
+        }).join('');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${o.orderDate || '-'}</td>
           <td>${o.platform || '-'}</td>
           <td>NT$ ${(o.grandTotal || 0).toLocaleString()}</td>
-          <td>${itemsTxt}</td>
+          <td>${itemsHtml}</td>
           <td>
             <button class="btn edit-btn" data-key="${key}" style="padding:4px 8px; font-size:12px; background:#f59e0b;">✏️ 編輯</button>
             <button class="btn btn-danger del-btn" data-key="${key}" style="padding:4px 8px; font-size:12px;">刪除</button>
