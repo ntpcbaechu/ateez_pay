@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATEEZ消費金額紀錄 - 管理後台</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f1f5f9; margin: 0; padding: 20px; color: #0f172a; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    
+    /* Login Modal */
+    #login-screen { position: fixed; inset: 0; background: rgba(15,23,42,0.8); display: flex; justify-content: center; align-items: center; z-index: 999; }
+    .login-box { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .login-box h2 { margin-top: 0; font-size: 20px; text-align: center; }
+    
+    .form-control { margin-bottom: 15px; }
+    .form-control label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+    .form-control input, select { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+    
+    .btn { background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-success { background: #10b981; }
+    .btn-success:hover { background: #059669; }
+
+    /* Main Admin Section */
+    #admin-content { display: none; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    
+    .card { background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 20px; }
+    .card-title { font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #334155; }
+    
+    /* Horizontal Sheet Inputs */
+    .sheet-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    
+    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .items-table th, .items-table td { padding: 8px; text-align: left; border: 1px solid #e2e8f0; }
+    .items-table th { background: #f8fafc; font-size: 13px; }
+
+    /* Records Table */
+    .records-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .records-table th, .records-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    .records-table th { background: #f8fafc; }
+  </style>
+</head>
+<body>
+
+<!-- Login Overlay -->
+<div id="login-screen">
+  <div class="login-box">
+    <h2>🔒 管理員登入</h2>
+    <div class="form-control">
+      <label>Email</label>
+      <input type="email" id="login-email" value="rkao29@gmail.com">
+    </div>
+    <div class="form-control">
+      <label>密碼</label>
+      <input type="password" id="login-password">
+    </div>
+    <button class="btn" id="login-btn" style="width: 100%;">登入</button>
+  </div>
+</div>
+
+<!-- Main Admin Panel -->
+<div class="container">
+  <div id="admin-content">
+    <header>
+      <h1>ATEEZ 記帳管理後台</h1>
+      <div>
+        <a href="index.html" class="btn" style="background:#64748b; text-decoration:none;">回前台</a>
+        <button class="btn btn-danger" id="logout-btn">登出</button>
+      </div>
+    </header>
+
+    <!-- 橫向快速新增列 -->
+    <div class="card">
+      <div class="card-title">⚡ 快速新增訂單 (橫向輸入)</div>
+      <form id="order-form">
+        <div class="sheet-grid">
+          <div class="form-control">
+            <label>活動名稱</label>
+            <input type="text" id="event-name" list="events-list" required placeholder="選擇或輸入">
+            <datalist id="events-list"></datalist>
+          </div>
+          <div class="form-control">
+            <label>下單日期</label>
+            <input type="date" id="order-date" required>
+          </div>
+          <div class="form-control">
+            <label>購入平台</label>
+            <input type="text" id="platform">
+          </div>
+          <div class="form-control">
+            <label>預計出貨</label>
+            <input type="month" id="ship-month">
+          </div>
+          <div class="form-control">
+            <label>到貨日期</label>
+            <input type="date" id="arrival-date">
+          </div>
+          <div class="form-control">
+            <label>運費</label>
+            <input type="number" id="shipping-fee" value="0" min="0">
+          </div>
+          <div class="form-control">
+            <label>折扣</label>
+            <input type="number" id="discount" value="0" min="0">
+          </div>
+        </div>
+
+        <label style="font-weight:600; font-size:13px; color:#475569;">📦 訂單商品細項：</label>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>品項名稱</th>
+              <th>成員</th>
+              <th>金額</th>
+              <th>附小卡</th>
+              <th>小卡成員</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+        <button type="button" class="btn" id="add-item-row-btn" style="background:#0284c7;">+ 新增商品</button>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <label><input type="checkbox" id="order-has-poka"> 滿額卡</label>
+            <select id="order-poka-member" style="display:none; width:auto; margin-left:10px; padding:4px 8px;"></select>
+          </div>
+          <button type="submit" class="btn btn-success" style="padding:10px 24px; font-size:16px;">💾 儲存這筆訂單</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 歷史紀錄管理與刪除 -->
+    <div class="card">
+      <div class="card-title">📜 歷史紀錄管理</div>
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>活動名稱</th>
+            <th>下單日</th>
+            <th>平台</th>
+            <th>總金額</th>
+            <th>商品與小卡細項</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="admin-records-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZiROSpWeL18xBlmsVc-TKHmDOimPXK0g",
+    authDomain: "ateezpay.firebaseapp.com",
+    databaseURL: "https://ateezpay-default-rtdb.firebaseio.com",
+    projectId: "ateezpay",
+    storageBucket: "ateezpay.firebasestorage.app",
+    messagingSenderId: "448106458713",
+    appId: "1:448106458713:web:9a3e6ed896a4eee7378b48"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  let membersData = [];
+  let pokaData = [];
+
+  // Auth Status
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-content').style.display = 'block';
+      loadInitialData();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('admin-content').style.display = 'none';
+    }
+  });
+
+  // Login
+  document.getElementById('login-btn').addEventListener('click', () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-password').value;
+    signInWithEmailAndPassword(auth, email, pass).catch(err => alert('登入失敗: ' + err.message));
+  });
+
+  // Logout
+  document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+  // Load JSON & Firebase
+  async function loadInitialData() {
+    try {
+      const [r1, r2] = await Promise.all([fetch('./json/members.json'), fetch('./json/poka.json')]);
+      membersData = await r1.json();
+      pokaData = await r2.json();
+    } catch(e) { console.error(e); }
+
+    // Datalist - Events
+    onValue(ref(db, 'events'), (snap) => {
+      const list = document.getElementById('events-list');
+      list.innerHTML = '';
+      const events = snap.val() || {};
+      Object.values(events).forEach(eName => {
+        const opt = document.createElement('option');
+        opt.value = eName;
+        list.appendChild(opt);
+      });
+    });
+
+    initForm();
+    listenRecords();
+  }
+
+  function populateSelect(selectEl, data) {
+    selectEl.innerHTML = '<option value="">請選擇</option>';
+    data.forEach(item => {
+      const val = typeof item === 'string' ? item : (item.name || item.id);
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = val;
+      selectEl.appendChild(opt);
+    });
+  }
+
+  const itemsTbody = document.getElementById('items-tbody');
+
+  function addItemRow() {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" class="item-name" required placeholder="品項名稱"></td>
+      <td><select class="item-member" required></select></td>
+      <td><input type="number" class="item-price" required min="0" value="0"></td>
+      <td><input type="checkbox" class="item-has-poka"></td>
+      <td><select class="item-poka-member" style="display:none;"></select></td>
+      <td><button type="button" class="btn btn-danger remove-row-btn" style="padding:2px 8px; font-size:12px;">刪除</button></td>
+    `;
+    populateSelect(tr.querySelector('.item-member'), membersData);
+    populateSelect(tr.querySelector('.item-poka-member'), pokaData);
+
+    const chk = tr.querySelector('.item-has-poka');
+    const pokaSel = tr.querySelector('.item-poka-member');
+    chk.addEventListener('change', () => pokaSel.style.display = chk.checked ? 'block' : 'none');
+
+    tr.querySelector('.remove-row-btn').addEventListener('click', () => {
+      if (itemsTbody.children.length > 1) tr.remove();
+    });
+
+    itemsTbody.appendChild(tr);
+  }
+
+  function initForm() {
+    itemsTbody.innerHTML = '';
+    addItemRow();
+    populateSelect(document.getElementById('order-poka-member'), pokaData);
+  }
+
+  document.getElementById('add-item-row-btn').addEventListener('click', addItemRow);
+  document.getElementById('order-has-poka').addEventListener('change', (e) => {
+    document.getElementById('order-poka-member').style.display = e.target.checked ? 'inline-block' : 'none';
+  });
+
+  // Submit Order
+  document.getElementById('order-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const eventName = document.getElementById('event-name').value.trim();
+
+    if (eventName) {
+      set(ref(db, `events/${eventName.replace(/[.#$\[\]]/g, "_")}`), eventName);
+    }
+
+    const items = [];
+    let itemsTotal = 0;
+    document.querySelectorAll('#items-tbody tr').forEach(tr => {
+      const price = Number(tr.querySelector('.item-price').value) || 0;
+      itemsTotal += price;
+      items.push({
+        name: tr.querySelector('.item-name').value,
+        member: tr.querySelector('.item-member').value,
+        price: price,
+        hasPoka: tr.querySelector('.item-has-poka').checked,
+        pokaMember: tr.querySelector('.item-has-poka').checked ? tr.querySelector('.item-poka-member').value : ''
+      });
+    });
+
+    const shippingFee = Number(document.getElementById('shipping-fee').value) || 0;
+    const discount = Number(document.getElementById('discount').value) || 0;
+
+    const orderData = {
+      eventName: eventName,
+      orderDate: document.getElementById('order-date').value,
+      platform: document.getElementById('platform').value,
+      shipMonth: document.getElementById('ship-month').value,
+      arrivalDate: document.getElementById('arrival-date').value,
+      shippingFee: shippingFee,
+      discount: discount,
+      grandTotal: itemsTotal + shippingFee - discount,
+      hasOrderPoka: document.getElementById('order-has-poka').checked,
+      orderPokaMember: document.getElementById('order-has-poka').checked ? document.getElementById('order-poka-member').value : '',
+      items: items,
+      createdAt: Date.now()
+    };
+
+    push(ref(db, 'orders'), orderData).then(() => {
+      document.getElementById('order-form').reset();
+      document.getElementById('order-poka-member').style.display = 'none';
+      initForm();
+      alert('儲存成功！');
+    });
+  });
+
+  // Render Admin Records
+  function listenRecords() {
+    onValue(ref(db, 'orders'), (snapshot) => {
+      const tbody = document.getElementById('admin-records-tbody');
+      tbody.innerHTML = '';
+      const data = snapshot.val();
+      if (!data) return;
+
+      Object.keys(data).reverse().forEach(key => {
+        const o = data[key];
+        let itemsTxt = (o.items || []).map(i => `${i.name}(${i.member})`).join(', ');
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${o.eventName}</b></td>
+          <td>${o.orderDate || '-'}</td>
+          <td>${o.platform || '-'}</td>
+          <td>NT$ ${o.grandTotal}</td>
+          <td>${itemsTxt}</td>
+          <td><button class="btn btn-danger del-btn" data-key="${key}" style="padding:4px 8px; font-size:12px;">刪除</button></td>
+        `;
+
+        tr.querySelector('.del-btn').addEventListener('click', () => {
+          if (confirm(`確定刪除 ${o.eventName} 的這筆紀錄？`)) {
+            remove(ref(db, `orders/${key}`));
+          }
+        });
+
+        tbody.appendChild(tr);
+      });
+    });
+  }
+</script>
+</body>
+</html>

@@ -3,115 +3,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ATEEZ消費金額紀錄</title>
+  <title>ATEEZ消費金額紀錄 - 前台</title>
   <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
-    .container { max-width: 750px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
-    h1 { text-align: center; color: #2d3748; margin-bottom: 20px; }
-    .total-card { background: #5a67d8; color: white; padding: 15px; border-radius: 8px; text-align: center; font-size: 1.25rem; font-weight: bold; margin-bottom: 20px; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    h1 { margin: 0; font-size: 24px; color: #0f172a; }
+    .admin-link { color: #3b82f6; text-decoration: none; font-weight: 600; font-size: 14px; }
+    .admin-link:hover { text-decoration: underline; }
     
-    .section-title { font-weight: bold; margin-bottom: 10px; color: #4a5568; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
-    .form-group { display: flex; flex-direction: column; gap: 5px; }
-    label { font-size: 13px; color: #718096; font-weight: 600; }
-    input, select { padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
-    
-    .items-container { background: #f7fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-    .item-row { border-bottom: 1px dashed #cbd5e0; padding-bottom: 12px; margin-bottom: 12px; }
-    .item-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .item-inputs { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-    .poka-subrow { display: flex; align-items: center; gap: 10px; font-size: 13px; margin-top: 5px; }
-    
-    .btn { background: #4299e1; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
-    .btn:hover { background: #3182ce; }
-    .btn-add { background: #ed8936; }
-    .btn-add:hover { background: #dd6b20; }
-    .btn-submit { background: #48bb78; width: 100%; padding: 12px; font-size: 16px; margin-top: 15px; }
-    .btn-submit:hover { background: #38a169; }
-    .btn-delete { background: #e53e3e; padding: 4px 8px; font-size: 12px; }
-    .btn-delete:hover { background: #c53030; }
+    .summary-card { background: linear-gradient(135deg, #4f46e5, #3b82f6); color: white; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .summary-card h2 { margin: 0; font-size: 14px; opacity: 0.9; font-weight: normal; }
+    .summary-card .amount { font-size: 32px; font-weight: 800; margin-top: 5px; }
 
-    .records-list { margin-top: 30px; }
-    .record-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 12px; overflow: hidden; background: #fff; }
-    .record-header { background: #edf2f7; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; }
-    .record-body { padding: 15px; display: none; border-top: 1px solid #e2e8f0; }
-    .record-body.active { display: block; }
-    .badge { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .table-container { background: white; border-radius: 12px; border: 1px solid #e2e8f0; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+    th, td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+    th { background: #f1f5f9; font-weight: 600; color: #475569; }
+    tr:last-child td { border-bottom: none; }
+    
+    .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 4px; font-size: 12px; color: #334155; margin-left: 4px; }
+    .badge-poka { background: #fef3c7; color: #92400e; }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>ATEEZ消費金額紀錄</h1>
-  
-  <div class="total-card">
-    總消費金額：NT$ <span id="grand-total">0</span>
+  <header>
+    <h1>ATEEZ 消費紀錄牆</h1>
+    <a href="admin.html" class="admin-link">🔒 管理後台 (Admin)</a>
+  </header>
+
+  <div class="summary-card">
+    <h2>總消費金額</h2>
+    <div class="amount">NT$ <span id="grand-total">0</span></div>
   </div>
 
-  <form id="order-form">
-    <div class="section-title">訂單基本資訊</div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>NO. (訂單編號)</label>
-        <input type="text" id="order-no" readonly style="background: #edf2f7;">
-      </div>
-      <div class="form-group">
-        <label>活動名稱</label>
-        <input type="text" id="event-name" required placeholder="請輸入活動名稱">
-      </div>
-      <div class="form-group">
-        <label>下單日期</label>
-        <input type="date" id="order-date" required>
-      </div>
-      <div class="form-group">
-        <label>購入平台</label>
-        <input type="text" id="platform" placeholder="請輸入購入平台">
-      </div>
-      <div class="form-group">
-        <label>預計出貨日</label>
-        <input type="month" id="ship-month">
-      </div>
-      <div class="form-group">
-        <label>到貨日期</label>
-        <input type="date" id="arrival-date">
-      </div>
-      <div class="form-group">
-        <label>運費</label>
-        <input type="number" id="shipping-fee" value="0" min="0">
-      </div>
-      <div class="form-group">
-        <label>折扣</label>
-        <input type="number" id="discount" value="0" min="0">
-      </div>
-    </div>
-
-    <div class="section-title">商品明細</div>
-    <div class="items-container" id="items-container">
-      <!-- 商品動態新增處 -->
-    </div>
-    <button type="button" class="btn btn-add" id="add-item-btn">+ 新增商品</button>
-
-    <div class="section-title" style="margin-top: 20px;">整筆訂單滿額卡</div>
-    <div class="poka-subrow">
-      <label><input type="checkbox" id="order-has-poka"> 有滿額卡</label>
-      <select id="order-poka-member" style="display: none;">
-        <option value="">請選擇成員</option>
-      </select>
-    </div>
-
-    <button type="submit" class="btn btn-submit">💾 儲存訂單紀錄</button>
-  </form>
-
-  <div class="records-list">
-    <div class="section-title">歷史購買紀錄</div>
-    <div id="records-container"></div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>活動名稱</th>
+          <th>下單日期</th>
+          <th>購入平台</th>
+          <th>預計出貨</th>
+          <th>到貨日期</th>
+          <th>購買商品與小卡細項</th>
+          <th>滿額卡</th>
+          <th>總金額</th>
+        </tr>
+      </thead>
+      <tbody id="records-tbody">
+        <tr><td colspan="8" style="text-align: center; color: #94a3b8;">載入資料中...</td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDZiROSpWeL18xBlmsVc-TKHmDOimPXK0g",
@@ -125,203 +77,46 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  const recordsRef = ref(db, 'orders');
 
-  let membersData = [];
-  let pokaData = [];
-
-  // 自動生成 NO.
-  function generateOrderNo() {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0,10).replace(/-/g,"");
-    const randomStr = Math.floor(1000 + Math.random() * 9000);
-    return `ORD-${dateStr}-${randomStr}`;
-  }
-
-  // 載入 JSON 選單資料
-  async function loadJsonData() {
-    try {
-      const [resMembers, resPoka] = await Promise.all([
-        fetch('./json/members.json'),
-        fetch('./json/poka.json')
-      ]);
-      membersData = await resMembers.json();
-      pokaData = await resPoka.json();
-      
-      initForm();
-    } catch (e) {
-      console.error("JSON 載入失敗:", e);
-      // 若 JSON 失敗的備用邏輯
-      initForm();
-    }
-  }
-
-  function populateSelect(selectEl, data) {
-    selectEl.innerHTML = '<option value="">請選擇成員</option>';
-    data.forEach(item => {
-      const opt = document.createElement('option');
-      opt.value = typeof item === 'string' ? item : (item.name || item.id);
-      opt.textContent = typeof item === 'string' ? item : (item.name || item.id);
-      selectEl.appendChild(opt);
-    });
-  }
-
-  const itemsContainer = document.getElementById('items-container');
-
-  function addItemRow() {
-    const row = document.createElement('div');
-    row.className = 'item-row';
-    row.innerHTML = `
-      <div class="item-inputs">
-        <input type="text" class="item-name" placeholder="品項名稱" required>
-        <select class="item-member" required></select>
-        <input type="number" class="item-price" placeholder="金額" min="0" required>
-      </div>
-      <div class="poka-subrow">
-        <label><input type="checkbox" class="item-has-poka"> 附小卡</label>
-        <select class="item-poka-member" style="display: none;"></select>
-        <button type="button" class="btn btn-delete remove-item-btn" style="margin-left: auto;">刪除品項</button>
-      </div>
-    `;
-
-    const memberSelect = row.querySelector('.item-member');
-    const pokaSelect = row.querySelector('.item-poka-member');
-    const hasPokaCheckbox = row.querySelector('.item-has-poka');
-
-    populateSelect(memberSelect, membersData);
-    populateSelect(pokaSelect, pokaData);
-
-    hasPokaCheckbox.addEventListener('change', (e) => {
-      pokaSelect.style.display = e.target.checked ? 'inline-block' : 'none';
-    });
-
-    row.querySelector('.remove-item-btn').addEventListener('click', () => {
-      if (itemsContainer.children.length > 1) row.remove();
-    });
-
-    itemsContainer.appendChild(row);
-  }
-
-  function initForm() {
-    document.getElementById('order-no').value = generateOrderNo();
-    itemsContainer.innerHTML = '';
-    addItemRow();
-    
-    const orderPokaSelect = document.getElementById('order-poka-member');
-    populateSelect(orderPokaSelect, pokaData);
-  }
-
-  document.getElementById('add-item-btn').addEventListener('click', addItemRow);
-
-  document.getElementById('order-has-poka').addEventListener('change', (e) => {
-    document.getElementById('order-poka-member').style.display = e.target.checked ? 'inline-block' : 'none';
-  });
-
-  // 儲存表單到 Firebase
-  document.getElementById('order-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const items = [];
-    let itemsTotal = 0;
-    
-    document.querySelectorAll('.item-row').forEach(row => {
-      const price = Number(row.querySelector('.item-price').value) || 0;
-      itemsTotal += price;
-      items.push({
-        name: row.querySelector('.item-name').value,
-        member: row.querySelector('.item-member').value,
-        price: price,
-        hasPoka: row.querySelector('.item-has-poka').checked,
-        pokaMember: row.querySelector('.item-has-poka').checked ? row.querySelector('.item-poka-member').value : ''
-      });
-    });
-
-    const shippingFee = Number(document.getElementById('shipping-fee').value) || 0;
-    const discount = Number(document.getElementById('discount').value) || 0;
-    const grandTotal = itemsTotal + shippingFee - discount;
-
-    const orderData = {
-      orderNo: document.getElementById('order-no').value,
-      eventName: document.getElementById('event-name').value,
-      orderDate: document.getElementById('order-date').value,
-      platform: document.getElementById('platform').value,
-      shipMonth: document.getElementById('ship-month').value,
-      arrivalDate: document.getElementById('arrival-date').value,
-      shippingFee: shippingFee,
-      discount: discount,
-      grandTotal: grandTotal,
-      hasOrderPoka: document.getElementById('order-has-poka').checked,
-      orderPokaMember: document.getElementById('order-has-poka').checked ? document.getElementById('order-poka-member').value : '',
-      items: items,
-      createdAt: Date.now()
-    };
-
-    push(recordsRef, orderData).then(() => {
-      document.getElementById('order-form').reset();
-      document.getElementById('order-poka-member').style.display = 'none';
-      initForm();
-    });
-  });
-
-  // 監聽 Firebase 歷史紀錄
-  onValue(recordsRef, (snapshot) => {
-    const recordsContainer = document.getElementById('records-container');
-    recordsContainer.innerHTML = '';
-    let totalAllOrders = 0;
+  onValue(ref(db, 'orders'), (snapshot) => {
+    const tbody = document.getElementById('records-tbody');
+    tbody.innerHTML = '';
+    let total = 0;
     const data = snapshot.val();
 
-    if (data) {
-      Object.keys(data).reverse().forEach(key => {
-        const order = data[key];
-        totalAllOrders += Number(order.grandTotal) || 0;
-
-        const card = document.createElement('div');
-        card.className = 'record-card';
-        
-        let itemsHtml = order.items.map(i => `
-          <li>
-            <b>${i.name}</b> (${i.member}) - NT$ ${i.price}
-            ${i.hasPoka ? `<span class="badge">小卡: ${i.pokaMember || '未選'}</span>` : ''}
-          </li>
-        `).join('');
-
-        card.innerHTML = `
-          <div class="record-header">
-            <span><b>${order.eventName}</b> (${order.orderNo})</span>
-            <span>NT$ ${order.grandTotal} ▼</span>
-          </div>
-          <div class="record-body">
-            <p>📅 下單日期：${order.orderDate} | 平台：${order.platform || '無'}</p>
-            <p>🚚 預計出貨：${order.shipMonth || '無'} | 到貨日期：${order.arrivalDate || '未到貨'}</p>
-            <hr>
-            <b>📦 商品項目：</b>
-            <ul>${itemsHtml}</ul>
-            <p>運費：NT$ ${order.shippingFee} | 折扣：NT$ ${order.discount}</p>
-            ${order.hasOrderPoka ? `<p>🎁 <b>滿額卡成員：</b>${order.orderPokaMember || '未選'}</p>` : ''}
-            <button class="btn btn-delete delete-order-btn" data-key="${key}" style="margin-top:10px;">刪除這筆訂單</button>
-          </div>
-        `;
-
-        card.querySelector('.record-header').addEventListener('click', () => {
-          const body = card.querySelector('.record-body');
-          body.classList.toggle('active');
-        });
-
-        card.querySelector('.delete-order-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm('確定要刪除這筆訂單紀錄嗎？')) {
-            remove(ref(db, `orders/${key}`));
-          }
-        });
-
-        recordsContainer.appendChild(card);
-      });
+    if (!data) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8;">目前尚無紀錄</td></tr>';
+      document.getElementById('grand-total').textContent = '0';
+      return;
     }
 
-    document.getElementById('grand-total').textContent = totalAllOrders;
-  });
+    Object.keys(data).reverse().forEach(key => {
+      const o = data[key];
+      total += Number(o.grandTotal) || 0;
 
-  loadJsonData();
+      let itemsSummary = (o.items || []).map(i => {
+        let pokaTxt = i.hasPoka ? `<span class="badge badge-poka">卡:${i.pokaMember || '無'}</span>` : '';
+        return `<div>• ${i.name} (${i.member}) - $${i.price} ${pokaTxt}</div>`;
+      }).join('');
+
+      let orderPokaTxt = o.hasOrderPoka ? `<span class="badge badge-poka">${o.orderPokaMember || '無'}</span>` : '-';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>${o.eventName}</b></td>
+        <td>${o.orderDate || '-'}</td>
+        <td>${o.platform || '-'}</td>
+        <td>${o.shipMonth || '-'}</td>
+        <td>${o.arrivalDate || '-'}</td>
+        <td>${itemsSummary}</td>
+        <td>${orderPokaTxt}</td>
+        <td><b>NT$ ${o.grandTotal}</b></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('grand-total').textContent = total.toLocaleString();
+  });
 </script>
 </body>
 </html>
